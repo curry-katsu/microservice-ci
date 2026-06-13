@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS processed_events (
+    id BIGSERIAL PRIMARY KEY,
+    event_id TEXT NOT NULL UNIQUE,
+    source TEXT NOT NULL,
+    detail_type TEXT NOT NULL,
+    processed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
