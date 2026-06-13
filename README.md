@@ -1,7 +1,7 @@
 # microservice-ci
 
 <!-- unit-test-coverage:start -->
-![Unit Test Coverage](https://img.shields.io/badge/unit_test_coverage-78%25-yellow)
+![Unit Test Coverage](https://img.shields.io/badge/unit_test_coverage-74%25-yellow)
 <!-- unit-test-coverage:end -->
 
 Python/AWS Lambda 向けバックエンドプロジェクトの最小構成です。
@@ -13,6 +13,7 @@ Python/AWS Lambda 向けバックエンドプロジェクトの最小構成で�
 src/
   applications/
     sample-eventbridge-handler-app/
+    sample-sqs-handler-app/
   libs/
     infra-core/
 local-env/
