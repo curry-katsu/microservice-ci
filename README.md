@@ -1,7 +1,7 @@
 # microservice-ci
 
 <!-- unit-test-coverage:start -->
-![Unit Test Coverage](https://img.shields.io/badge/unit_test_coverage-79%25-yellow)
+![Unit Test Coverage](https://img.shields.io/badge/unit_test_coverage-78%25-yellow)
 <!-- unit-test-coverage:end -->
 
 Python/AWS Lambda 向けバックエンドプロジェクトの最小構成です。
