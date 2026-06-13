@@ -8,6 +8,9 @@ on:
     branches:
       - develop
 
+permissions:
+  contents: write
+
 jobs:
   discover:
     runs-on: ubuntu-latest
@@ -70,9 +73,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Python
+        id: setup-python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.14.6"
 
       - name: Install Poetry
         uses: snok/install-poetry@v1
@@ -85,9 +89,12 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ matrix.project }}/.venv
-          key: venv-${{ runner.os }}-${{ matrix.project }}-${{ hashFiles(format('{0}/pyproject.toml', matrix.project), format('{0}/poetry.lock', matrix.project)) }}
+          key: venv-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-${{ matrix.project }}-${{ hashFiles(format('{0}/pyproject.toml', matrix.project), format('{0}/poetry.lock', matrix.project)) }}
           restore-keys: |
-            venv-${{ runner.os }}-${{ matrix.project }}-
+            venv-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-${{ matrix.project }}-
+
+      - name: Use selected Python
+        run: poetry env use "$(command -v python)"
 
       - name: Install dependencies
         run: poetry install
@@ -123,9 +130,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Python
+        id: setup-python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.14.6"
 
       - name: Install Poetry
         uses: snok/install-poetry@v1
@@ -138,15 +146,89 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ matrix.project }}/.venv
-          key: venv-${{ runner.os }}-${{ matrix.project }}-${{ hashFiles(format('{0}/pyproject.toml', matrix.project), format('{0}/poetry.lock', matrix.project)) }}
+          key: venv-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-${{ matrix.project }}-${{ hashFiles(format('{0}/pyproject.toml', matrix.project), format('{0}/poetry.lock', matrix.project)) }}
           restore-keys: |
-            venv-${{ runner.os }}-${{ matrix.project }}-
+            venv-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-${{ matrix.project }}-
+
+      - name: Use selected Python
+        run: poetry env use "$(command -v python)"
 
       - name: Install dependencies
         run: poetry install
 
       - name: Unit test
         run: poetry run pytest --cov --cov-report=term --cov-report=xml
+
+  update-coverage-badge:
+    needs: unit-test-all
+    if: ${{ github.event_name == 'push' && github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14.6"
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: "2.2.1"
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Generate combined coverage
+        run: make coverage-all
+
+      - name: Update README coverage badge
+        shell: bash
+        run: |
+          coverage="$(python -c 'import xml.etree.ElementTree as ET; root = ET.parse("coverage.xml").getroot(); print(round(float(root.attrib["line-rate"]) * 100))')"
+
+          if (( coverage >= 90 )); then
+            color="brightgreen"
+          elif (( coverage >= 80 )); then
+            color="green"
+          elif (( coverage >= 70 )); then
+            color="yellow"
+          else
+            color="orange"
+          fi
+
+          badge="![Unit Test Coverage](https://img.shields.io/badge/unit_test_coverage-${coverage}%25-${color})"
+          awk -v badge="${badge}" '
+            /<!-- unit-test-coverage:start -->/ {
+              print
+              print badge
+              in_block = 1
+              next
+            }
+            /<!-- unit-test-coverage:end -->/ {
+              in_block = 0
+              print
+              next
+            }
+            !in_block { print }
+          ' README.md > README.md.tmp
+          mv README.md.tmp README.md
+
+      - name: Commit coverage badge
+        shell: bash
+        run: |
+          if git diff --quiet README.md; then
+            echo "Coverage badge is already up to date."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          git commit -m "Update unit test coverage badge [skip ci]"
+          git push
 
   no-changes:
     needs: discover

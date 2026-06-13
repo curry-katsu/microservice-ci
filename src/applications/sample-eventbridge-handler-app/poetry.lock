@@ -674,7 +674,7 @@ name = "infra-core"
 version = "0.1.0"
 description = "Shared infrastructure helpers for Lambda applications."
 optional = false
-python-versions = "^3.11"
+python-versions = ">=3.14.6,<3.15"
 groups = ["main"]
 files = []
 develop = true
@@ -1041,10 +1041,7 @@ files = [
 librt = {version = ">=0.8.0", markers = "platform_python_implementation != \"PyPy\""}
 mypy_extensions = ">=1.0.0"
 pathspec = ">=1.0.0"
-typing_extensions = [
-    {version = ">=4.6.0", markers = "python_version < \"3.15\""},
-    {version = ">=4.14.0", markers = "python_version >= \"3.15\""},
-]
+typing_extensions = {version = ">=4.6.0", markers = "python_version < \"3.15\""}
 
 [package.extras]
 dmypy = ["psutil (>=4.0)"]
@@ -1137,7 +1134,6 @@ files = [
 
 [package.dependencies]
 psycopg-binary = {version = "3.3.4", optional = true, markers = "implementation_name != \"pypy\" and extra == \"binary\""}
-typing-extensions = {version = ">=4.6", markers = "python_version < \"3.13\""}
 tzdata = {version = "*", markers = "sys_platform == \"win32\""}
 
 [package.extras]
@@ -1670,5 +1666,5 @@ test = ["pytest", "pytest-cov"]
 
 [metadata]
 lock-version = "2.1"
-python-versions = "^3.11"
-content-hash = "ee1acbdc3cc5876b5a4827b2a99713a29221e69d02de07a7f87a9439a4dea701"
+python-versions = ">=3.14.6,<3.15"
+content-hash = "6c7629c44ef81407506c1dc07da0f2e447fe8f7b7ab0ef357be3a2d0d9ec5fa1"

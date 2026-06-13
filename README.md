@@ -1,5 +1,9 @@
 # microservice-ci
 
+<!-- unit-test-coverage:start -->
+![Unit Test Coverage](https://img.shields.io/badge/unit_test_coverage-78%25-yellow)
+<!-- unit-test-coverage:end -->
+
 Python/AWS Lambda 向けバックエンドプロジェクトの最小構成です。
 各 Lambda アプリケーションと内部ライブラリは、個別の Poetry プロジェクトとして `src/applications` と `src/libs` に配置します。
 
@@ -41,6 +45,7 @@ make list-projects
 make ci-all
 make format-all
 make test-all
+make coverage-all
 ```
 
 サンプルアプリケーションは内部ライブラリ `infra-core` を Poetry path dependency として参照しています。
