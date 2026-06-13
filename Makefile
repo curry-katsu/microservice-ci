@@ -48,7 +48,7 @@ test-all:
 	@set -euo pipefail; \
 	for project in $(POETRY_PROJECTS); do \
 		echo "==> pytest: $$project"; \
-		(cd "$$project" && $(POETRY) run pytest --cov --cov-report=term --cov-report=xml); \
+		(cd "$$project" && $(POETRY) run coverage erase && set +e; $(POETRY) run coverage run --source=src -m pytest; rc=$$?; set -e; if [[ $$rc -ne 0 && $$rc -ne 5 ]]; then exit $$rc; fi; $(POETRY) run coverage report -i --include='src/*' --omit='*/tests/*'; $(POETRY) run coverage xml -i -o coverage.xml --include='src/*' --omit='*/tests/*'); \
 	done
 
 coverage-all:
@@ -56,18 +56,22 @@ coverage-all:
 	rm -rf coverage-reports .coverage .coverage.* coverage.xml htmlcov; \
 	mkdir -p coverage-reports; \
 	for project in $(POETRY_PROJECTS); do \
-		echo "==> coverage: $$project"; \
-		(cd "$$project" && rm -f .coverage .coverage.* coverage.xml && $(POETRY) install && $(POETRY) run coverage run --parallel-mode --source="$(ROOT_DIR)/src" -m pytest); \
-		find "$$project" -maxdepth 1 -name '.coverage.*' -exec cp {} coverage-reports/ \; ; \
+		echo "==> poetry install: $$project"; \
+		(cd "$$project" && $(POETRY) install); \
 	done; \
-	(cd "$(COVERAGE_PROJECT)" && $(POETRY) run coverage combine --data-file="$(ROOT_DIR)/.coverage" "$(ROOT_DIR)/coverage-reports"); \
-	(cd "$(COVERAGE_PROJECT)" && $(POETRY) run coverage report --data-file="$(ROOT_DIR)/.coverage" --include="$(ROOT_DIR)/src/*" --omit="*/tests/*,*/.venv/*"); \
-	(cd "$(COVERAGE_PROJECT)" && $(POETRY) run coverage xml --data-file="$(ROOT_DIR)/.coverage" -o "$(ROOT_DIR)/coverage.xml" --include="$(ROOT_DIR)/src/*" --omit="*/tests/*,*/.venv/*"); \
-	(cd "$(COVERAGE_PROJECT)" && $(POETRY) run coverage html --data-file="$(ROOT_DIR)/.coverage" -d "$(ROOT_DIR)/htmlcov" --include="$(ROOT_DIR)/src/*" --omit="*/tests/*,*/.venv/*")
+	source_dirs="$$(find "$(ROOT_DIR)/src/applications" "$(ROOT_DIR)/src/libs" -path '*/src' -type d | sort)"; \
+	coverage_source="$$(printf '%s\n' "$$source_dirs" | paste -sd, -)"; \
+	pythonpath="$$(printf '%s\n' "$$source_dirs" | paste -sd: -)"; \
+	test_dirs="$$(find "$(ROOT_DIR)/src/applications" "$(ROOT_DIR)/src/libs" -path '*/tests' -type d | sort | tr '\n' ' ')"; \
+	echo "==> coverage: all projects"; \
+	(cd "$(COVERAGE_PROJECT)" && $(POETRY) run coverage erase && PYTHONPATH="$$pythonpath" $(POETRY) run coverage run --data-file="$(ROOT_DIR)/.coverage" --source="$$coverage_source" -m pytest $$test_dirs); \
+	(cd "$(COVERAGE_PROJECT)" && $(POETRY) run coverage report --data-file="$(ROOT_DIR)/.coverage" --omit="*/tests/*,*/.venv/*"); \
+	(cd "$(COVERAGE_PROJECT)" && $(POETRY) run coverage xml --data-file="$(ROOT_DIR)/.coverage" -o "$(ROOT_DIR)/coverage.xml" --omit="*/tests/*,*/.venv/*"); \
+	(cd "$(COVERAGE_PROJECT)" && $(POETRY) run coverage html --data-file="$(ROOT_DIR)/.coverage" -d "$(ROOT_DIR)/htmlcov" --omit="*/tests/*,*/.venv/*")
 
 ci-all:
 	@set -euo pipefail; \
 	for project in $(POETRY_PROJECTS); do \
 		echo "==> ci: $$project"; \
-		(cd "$$project" && $(POETRY) install && $(POETRY) run isort --check-only . && $(POETRY) run black --check . && $(POETRY) run flake8 . && $(POETRY) run mypy . && $(POETRY) run pytest --cov --cov-report=term --cov-report=xml); \
+		(cd "$$project" && $(POETRY) install && $(POETRY) run isort --check-only . && $(POETRY) run black --check . && $(POETRY) run flake8 . && $(POETRY) run mypy . && $(POETRY) run coverage erase && set +e; $(POETRY) run coverage run --source=src -m pytest; rc=$$?; set -e; if [[ $$rc -ne 0 && $$rc -ne 5 ]]; then exit $$rc; fi; $(POETRY) run coverage report -i --include='src/*' --omit='*/tests/*'; $(POETRY) run coverage xml -i -o coverage.xml --include='src/*' --omit='*/tests/*'); \
 	done

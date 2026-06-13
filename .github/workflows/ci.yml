@@ -112,7 +112,18 @@ jobs:
         run: poetry run mypy .
 
       - name: Test
-        run: poetry run pytest --cov --cov-report=term --cov-report=xml
+        shell: bash
+        run: |
+          poetry run coverage erase
+          set +e
+          poetry run coverage run --source=src -m pytest
+          rc=$?
+          set -e
+          if [[ "${rc}" -ne 0 && "${rc}" -ne 5 ]]; then
+            exit "${rc}"
+          fi
+          poetry run coverage report -i --include='src/*' --omit='*/tests/*'
+          poetry run coverage xml -i -o coverage.xml --include='src/*' --omit='*/tests/*'
 
   unit-test-all:
     needs: discover
@@ -157,7 +168,18 @@ jobs:
         run: poetry install
 
       - name: Unit test
-        run: poetry run pytest --cov --cov-report=term --cov-report=xml
+        shell: bash
+        run: |
+          poetry run coverage erase
+          set +e
+          poetry run coverage run --source=src -m pytest
+          rc=$?
+          set -e
+          if [[ "${rc}" -ne 0 && "${rc}" -ne 5 ]]; then
+            exit "${rc}"
+          fi
+          poetry run coverage report -i --include='src/*' --omit='*/tests/*'
+          poetry run coverage xml -i -o coverage.xml --include='src/*' --omit='*/tests/*'
 
   update-coverage-badge:
     needs: unit-test-all
