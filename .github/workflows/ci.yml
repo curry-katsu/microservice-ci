@@ -2,29 +2,61 @@ name: CI
 
 on:
   pull_request:
+    branches:
+      - develop
   push:
     branches:
-      - main
+      - develop
 
 jobs:
   discover:
     runs-on: ubuntu-latest
     outputs:
       projects: ${{ steps.projects.outputs.projects }}
+      mode: ${{ steps.projects.outputs.mode }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Discover Poetry projects
         id: projects
         shell: bash
         run: |
-          projects="$(find src/applications src/libs -name pyproject.toml -not -path '*/.venv/*' -exec dirname {} \; | sort | jq -R -s -c 'split("\n")[:-1]')"
+          all_projects="$(find src/applications src/libs -name pyproject.toml -not -path '*/.venv/*' -exec dirname {} \; | sort)"
+
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            projects="$(printf '%s\n' "${all_projects}" | jq -R -s -c 'split("\n")[:-1]')"
+            echo "mode=all" >> "$GITHUB_OUTPUT"
+            echo "projects=${projects}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          base_sha="${{ github.event.pull_request.base.sha }}"
+          changed_files="$(git diff --name-only "${base_sha}...HEAD")"
+
+          if printf '%s\n' "${changed_files}" | grep -Eq '^(\.github/workflows/ci\.yml|Makefile|pyproject\.toml)$'; then
+            projects="$(printf '%s\n' "${all_projects}" | jq -R -s -c 'split("\n")[:-1]')"
+            echo "mode=all" >> "$GITHUB_OUTPUT"
+            echo "projects=${projects}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          projects="$(
+            while IFS= read -r project; do
+              if printf '%s\n' "${changed_files}" | grep -q "^${project}/"; then
+                printf '%s\n' "${project}"
+              fi
+            done <<< "${all_projects}" | sort -u | jq -R -s -c 'split("\n")[:-1]'
+          )"
+
+          echo "mode=changed" >> "$GITHUB_OUTPUT"
           echo "projects=${projects}" >> "$GITHUB_OUTPUT"
 
   validate:
     needs: discover
-    if: ${{ needs.discover.outputs.projects != '[]' }}
+    if: ${{ github.event_name == 'pull_request' && needs.discover.outputs.projects != '[]' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -74,3 +106,52 @@ jobs:
 
       - name: Test
         run: poetry run pytest --cov --cov-report=term --cov-report=xml
+
+  unit-test-all:
+    needs: discover
+    if: ${{ github.event_name == 'push' && needs.discover.outputs.projects != '[]' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        project: ${{ fromJson(needs.discover.outputs.projects) }}
+    defaults:
+      run:
+        working-directory: ${{ matrix.project }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: "2.2.1"
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Cache virtualenv
+        uses: actions/cache@v4
+        with:
+          path: ${{ matrix.project }}/.venv
+          key: venv-${{ runner.os }}-${{ matrix.project }}-${{ hashFiles(format('{0}/pyproject.toml', matrix.project), format('{0}/poetry.lock', matrix.project)) }}
+          restore-keys: |
+            venv-${{ runner.os }}-${{ matrix.project }}-
+
+      - name: Install dependencies
+        run: poetry install
+
+      - name: Unit test
+        run: poetry run pytest --cov --cov-report=term --cov-report=xml
+
+  no-changes:
+    needs: discover
+    if: ${{ github.event_name == 'pull_request' && needs.discover.outputs.projects == '[]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: No changed Poetry projects
+        run: echo "No changed Poetry projects to validate."
