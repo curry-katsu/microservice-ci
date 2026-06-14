@@ -20,6 +20,8 @@ src/
     sample-sqs-handler-app/
   libs/
     infra-core/
+  test-libs/
+    integration-test-utils/
 local-env/
   infra/
   database/
@@ -51,9 +53,11 @@ make ci-all
 make format-all
 make test-all
 make coverage-all
+make integration-test PROJECT=src/applications/sample-sqs-handler-app
 ```
 
 サンプルアプリケーションは内部ライブラリ `infra-core` を Poetry path dependency として参照しています。
+Integration test はアプリケーション配下の `integration_tests` に配置し、共通のテスト補助コードは `src/test-libs/integration-test-utils` から Poetry path dependency として参照します。
 
 ## CI
 
@@ -76,6 +80,7 @@ poetry run pytest --cov --cov-report=term --cov-report=xml
 ```
 
 `develop` への push では全 Poetry プロジェクトの unit test を実行し、その後 `make coverage-all` で `src` 配下の統合 coverage を生成します。
+また、変更されたアプリケーション、内部ライブラリ、テスト用ライブラリ、またはローカル環境定義に応じて、対象アプリケーションの Integration test を Floci と PostgreSQL を起動したローカル環境で実行します。
 統合 coverage は `coverage.xml` と `htmlcov/index.html` に出力できます。
 
 ```bash
