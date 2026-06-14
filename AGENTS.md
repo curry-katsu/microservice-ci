@@ -33,7 +33,8 @@ poetry run pytest --cov --cov-report=term --cov-report=xml
 
 - The GitHub Actions workflow targets the `develop` branch for both pull requests and pushes.
 - Poetry projects are discovered from `src/applications/**/pyproject.toml` and `src/libs/**/pyproject.toml`.
-- Pull request CI validates only changed Poetry projects. Changes to CI, the root `Makefile`, or the root `pyproject.toml` force validation of all projects.
+- Pull request CI validates only changed Poetry projects. Changes to the CI workflow or the root `pyproject.toml` force validation of all projects.
+- A project-local `pyproject.toml` change validates only that Poetry project unless another changed file triggers all-project validation.
 - Pull request validation runs `poetry install`, `isort --check-only`, `black --check`, `flake8`, `mypy`, and pytest through `coverage`.
 - Push CI on `develop` runs unit tests for all Poetry projects, then regenerates the combined coverage report with `make coverage-all`.
 - The `update-coverage-badge` job updates the README unit test coverage badge on `develop` when the combined coverage changes.

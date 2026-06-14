@@ -61,7 +61,8 @@ GitHub Actions は `develop` ブランチへの pull request と push で動作�
 `src/applications/**/pyproject.toml` と `src/libs/**/pyproject.toml` を検出し、各ディレクトリを独立した Poetry プロジェクトとして扱います。
 
 Pull request では変更された Poetry プロジェクトだけを matrix で検証します。
-ただし、`.github/workflows/ci.yml`, ルート `Makefile`, ルート `pyproject.toml` が変更された場合は、全 Poetry プロジェクトを検証します。
+ただし、`.github/workflows/ci.yml` またはルート `pyproject.toml` が変更された場合は、全 Poetry プロジェクトを検証します。
+個別 Poetry プロジェクトの `pyproject.toml` 変更は、そのプロジェクトだけを検証対象にします。
 
 Pull request の各プロジェクト検証では以下を実行します。
 
