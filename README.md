@@ -1,5 +1,9 @@
 # microservice-ci
 
+<!-- unit-test-status:start -->
+![Unit Tests](https://img.shields.io/badge/unit_tests-passing-brightgreen)
+<!-- unit-test-status:end -->
+
 <!-- unit-test-coverage:start -->
 ![Unit Test Coverage](https://img.shields.io/badge/unit_test_coverage-74%25-yellow)
 <!-- unit-test-coverage:end -->
@@ -53,7 +57,13 @@ make coverage-all
 
 ## CI
 
-GitHub Actions は `src/applications/**/pyproject.toml` と `src/libs/**/pyproject.toml` を検出し、matrix で各 Poetry プロジェクトに対して以下を実行します。
+GitHub Actions は `develop` ブランチへの pull request と push で動作します。
+`src/applications/**/pyproject.toml` と `src/libs/**/pyproject.toml` を検出し、各ディレクトリを独立した Poetry プロジェクトとして扱います。
+
+Pull request では変更された Poetry プロジェクトだけを matrix で検証します。
+ただし、`.github/workflows/ci.yml`, ルート `Makefile`, ルート `pyproject.toml` が変更された場合は、全 Poetry プロジェクトを検証します。
+
+Pull request の各プロジェクト検証では以下を実行します。
 
 ```bash
 poetry install
@@ -63,3 +73,12 @@ poetry run flake8 .
 poetry run mypy .
 poetry run pytest --cov --cov-report=term --cov-report=xml
 ```
+
+`develop` への push では全 Poetry プロジェクトの unit test を実行し、その後 `make coverage-all` で `src` 配下の統合 coverage を生成します。
+統合 coverage は `coverage.xml` と `htmlcov/index.html` に出力できます。
+
+```bash
+make coverage-all
+```
+
+CI の `update-readme-badges` job は、unit test の成功/失敗と統合 coverage から README 冒頭の badges を更新します。

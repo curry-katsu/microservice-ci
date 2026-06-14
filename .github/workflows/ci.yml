@@ -181,9 +181,9 @@ jobs:
           poetry run coverage report -i --include='src/*' --omit='*/tests/*'
           poetry run coverage xml -i -o coverage.xml --include='src/*' --omit='*/tests/*'
 
-  update-coverage-badge:
+  update-readme-badges:
     needs: unit-test-all
-    if: ${{ github.event_name == 'push' && github.actor != 'github-actions[bot]' }}
+    if: ${{ always() && github.event_name == 'push' && github.actor != 'github-actions[bot]' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -204,25 +204,53 @@ jobs:
           virtualenvs-in-project: true
 
       - name: Generate combined coverage
+        if: ${{ needs.unit-test-all.result == 'success' }}
         run: make coverage-all
 
-      - name: Update README coverage badge
+      - name: Update README badges
         shell: bash
         run: |
-          coverage="$(python -c 'import xml.etree.ElementTree as ET; root = ET.parse("coverage.xml").getroot(); print(round(float(root.attrib["line-rate"]) * 100))')"
+          test_result="${{ needs.unit-test-all.result }}"
 
-          if (( coverage >= 90 )); then
-            color="brightgreen"
-          elif (( coverage >= 80 )); then
-            color="green"
-          elif (( coverage >= 70 )); then
-            color="yellow"
+          if [[ "${test_result}" == "success" ]]; then
+            test_badge="![Unit Tests](https://img.shields.io/badge/unit_tests-passing-brightgreen)"
+          elif [[ "${test_result}" == "skipped" ]]; then
+            test_badge="![Unit Tests](https://img.shields.io/badge/unit_tests-skipped-lightgrey)"
           else
-            color="orange"
+            test_badge="![Unit Tests](https://img.shields.io/badge/unit_tests-failed-red)"
           fi
 
-          badge="![Unit Test Coverage](https://img.shields.io/badge/unit_test_coverage-${coverage}%25-${color})"
-          awk -v badge="${badge}" '
+          awk -v badge="${test_badge}" '
+            /<!-- unit-test-status:start -->/ {
+              print
+              print badge
+              in_block = 1
+              next
+            }
+            /<!-- unit-test-status:end -->/ {
+              in_block = 0
+              print
+              next
+            }
+            !in_block { print }
+          ' README.md > README.md.tmp
+          mv README.md.tmp README.md
+
+          if [[ "${test_result}" == "success" ]]; then
+            coverage="$(python -c 'import xml.etree.ElementTree as ET; root = ET.parse("coverage.xml").getroot(); print(round(float(root.attrib["line-rate"]) * 100))')"
+
+            if (( coverage >= 90 )); then
+              color="brightgreen"
+            elif (( coverage >= 80 )); then
+              color="green"
+            elif (( coverage >= 70 )); then
+              color="yellow"
+            else
+              color="orange"
+            fi
+
+            coverage_badge="![Unit Test Coverage](https://img.shields.io/badge/unit_test_coverage-${coverage}%25-${color})"
+            awk -v badge="${coverage_badge}" '
             /<!-- unit-test-coverage:start -->/ {
               print
               print badge
@@ -235,21 +263,22 @@ jobs:
               next
             }
             !in_block { print }
-          ' README.md > README.md.tmp
-          mv README.md.tmp README.md
+            ' README.md > README.md.tmp
+            mv README.md.tmp README.md
+          fi
 
-      - name: Commit coverage badge
+      - name: Commit README badges
         shell: bash
         run: |
           if git diff --quiet README.md; then
-            echo "Coverage badge is already up to date."
+            echo "README badges are already up to date."
             exit 0
           fi
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add README.md
-          git commit -m "Update unit test coverage badge [skip ci]"
+          git commit -m "Update README test badges [skip ci]"
           git push
 
   no-changes:
