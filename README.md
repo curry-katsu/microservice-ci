@@ -5,7 +5,7 @@
 <!-- unit-test-status:end -->
 
 <!-- unit-test-coverage:start -->
-![Unit Test Coverage](https://img.shields.io/badge/unit_test_coverage-44%25-orange)
+![Unit Test Coverage](https://img.shields.io/badge/unit_test_coverage-49%25-orange)
 <!-- unit-test-coverage:end -->
 
 Python/AWS Lambda 向けバックエンドプロジェクトの最小構成です。
