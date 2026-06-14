@@ -16,6 +16,8 @@ def create_aws_client(
     region = region_name or os.getenv("AWS_DEFAULT_REGION", "ap-northeast-1")
     return boto3.client(
         service_name,
+        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID", "test"),
+        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY", "test"),
         endpoint_url=(
             endpoint_url
             or os.getenv(f"AWS_ENDPOINT_URL_{normalized_service}")
