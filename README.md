@@ -79,12 +79,13 @@ poetry run mypy .
 poetry run pytest --cov --cov-report=term --cov-report=xml
 ```
 
-`develop` への push では全 Poetry プロジェクトの unit test を実行し、その後 `make coverage-all` で `src` 配下の統合 coverage を生成します。
+`develop` への push では全 Poetry プロジェクトの unit test を実行し、各 project の coverage report を artifact として保存します。
+その後、`update-readme-badges` job が coverage artifact を集約して README の coverage badge を更新します。
 また、変更されたアプリケーション、内部ライブラリ、テスト用ライブラリ、またはローカル環境定義に応じて、対象アプリケーションの Integration test を Floci と PostgreSQL を起動したローカル環境で実行します。
-統合 coverage は `coverage.xml` と `htmlcov/index.html` に出力できます。
+ローカルでは `make coverage-all` で統合 coverage を `coverage.xml` と `htmlcov/index.html` に出力できます。
 
 ```bash
 make coverage-all
 ```
 
-CI の `update-readme-badges` job は、unit test の成功/失敗と統合 coverage から README 冒頭の badges を更新します。
+CI の `update-readme-badges` job は、unit test の成功/失敗と集約した coverage から README 冒頭の badges を更新します。

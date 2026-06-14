@@ -202,6 +202,20 @@ jobs:
           poetry run coverage report -i --include='src/*' --omit='*/tests/*'
           poetry run coverage xml -i -o coverage.xml --include='src/*' --omit='*/tests/*'
 
+      - name: Prepare coverage artifact
+        shell: bash
+        run: |
+          mkdir -p coverage-artifact
+          cp coverage.xml coverage-artifact/coverage.xml
+          printf '%s\n' "${{ matrix.project }}" > coverage-artifact/project.txt
+
+      - name: Upload unit coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-coverage-${{ hashFiles(format('{0}/pyproject.toml', matrix.project)) }}
+          path: ${{ matrix.project }}/coverage-artifact/
+          retention-days: 14
+
   update-readme-badges:
     needs: unit-test-all
     if: ${{ always() && github.event_name == 'push' && github.actor != 'github-actions[bot]' }}
@@ -217,25 +231,54 @@ jobs:
         with:
           python-version: "3.14.6"
 
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          version: "2.2.1"
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-
-      - name: Generate combined coverage
+      - name: Download unit coverage reports
         if: ${{ needs.unit-test-all.result == 'success' }}
-        run: make coverage-all
+        uses: actions/download-artifact@v4
+        with:
+          pattern: unit-coverage-*
+          path: coverage-input
+
+      - name: Generate combined coverage XML
+        if: ${{ needs.unit-test-all.result == 'success' }}
+        shell: bash
+        run: |
+          python - <<'PY'
+          import pathlib
+          import xml.etree.ElementTree as ET
+
+          total_lines = 0
+          covered_lines = 0
+          for report_path in sorted(pathlib.Path("coverage-input").glob("*/coverage.xml")):
+              root = ET.parse(report_path).getroot()
+              total_lines += int(root.attrib.get("lines-valid", "0"))
+              covered_lines += int(root.attrib.get("lines-covered", "0"))
+
+          line_rate = covered_lines / total_lines if total_lines else 0.0
+          coverage = ET.Element(
+              "coverage",
+              {
+                  "line-rate": f"{line_rate:.6f}",
+                  "lines-covered": str(covered_lines),
+                  "lines-valid": str(total_lines),
+              },
+          )
+          ET.ElementTree(coverage).write(
+              "coverage.xml",
+              encoding="utf-8",
+              xml_declaration=True,
+          )
+          print(
+              f"Combined coverage: {covered_lines}/{total_lines} "
+              f"({round(line_rate * 100)}%)"
+          )
+          PY
 
       - name: Upload combined coverage report
         if: ${{ needs.unit-test-all.result == 'success' }}
         uses: actions/upload-artifact@v4
         with:
           name: combined-coverage-report
-          path: |
-            coverage.xml
-            htmlcov/
+          path: coverage.xml
           retention-days: 14
 
       - name: Update README badges
