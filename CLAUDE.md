@@ -15,7 +15,8 @@ CI 戦略:
 - GitHub Actions は `develop` への pull request と push で動作する
 - Poetry プロジェクトは `src/applications/**/pyproject.toml` と `src/libs/**/pyproject.toml` から自動検出する
 - pull request では変更された Poetry プロジェクトだけを matrix で検証する
-- CI workflow、ルート `Makefile`、ルート `pyproject.toml` の変更時は全 Poetry プロジェクトを検証する
+- CI workflow、ルート `pyproject.toml` の変更時は全 Poetry プロジェクトを検証する
+- 個別 Poetry プロジェクトの `pyproject.toml` 変更は、そのプロジェクトだけを検証対象にする
 - pull request 検証では `poetry install`, `isort`, `black`, `flake8`, `mypy`, pytest/coverage を実行する
 - `develop` push では全 Poetry プロジェクトの unit test を実行し、`make coverage-all` で統合 coverage を作成する
 - 統合 coverage の結果は README の unit test coverage badge に反映される
