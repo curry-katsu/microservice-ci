@@ -59,10 +59,10 @@ coverage-all:
 		echo "==> poetry install: $$project"; \
 		(cd "$$project" && $(POETRY) install); \
 	done; \
-	source_dirs="$$(find "$(ROOT_DIR)/src/applications" "$(ROOT_DIR)/src/libs" -path '*/src' -type d | sort)"; \
+	source_dirs="$$(find "$(ROOT_DIR)/src/applications" "$(ROOT_DIR)/src/libs" -path '*/.venv/*' -prune -o -path '*/src' -type d -print | sort)"; \
 	coverage_source="$$(printf '%s\n' "$$source_dirs" | paste -sd, -)"; \
 	pythonpath="$$(printf '%s\n' "$$source_dirs" | paste -sd: -)"; \
-	test_dirs="$$(find "$(ROOT_DIR)/src/applications" "$(ROOT_DIR)/src/libs" -path '*/tests' -type d | sort | tr '\n' ' ')"; \
+	test_dirs="$$(find "$(ROOT_DIR)/src/applications" "$(ROOT_DIR)/src/libs" -path '*/.venv/*' -prune -o -path '*/tests' -type d -print | sort | tr '\n' ' ')"; \
 	echo "==> coverage: all projects"; \
 	(cd "$(COVERAGE_PROJECT)" && $(POETRY) run coverage erase && PYTHONPATH="$$pythonpath" $(POETRY) run coverage run --data-file="$(ROOT_DIR)/.coverage" --source="$$coverage_source" -m pytest $$test_dirs); \
 	(cd "$(COVERAGE_PROJECT)" && $(POETRY) run coverage report --data-file="$(ROOT_DIR)/.coverage" --omit="*/tests/*,*/.venv/*"); \
