@@ -701,6 +701,24 @@ files = [
 ]
 
 [[package]]
+name = "integration-test-utils"
+version = "0.1.0"
+description = "Shared helpers for application integration tests."
+optional = false
+python-versions = ">=3.14.6,<3.15"
+groups = ["dev"]
+files = []
+develop = true
+
+[package.dependencies]
+boto3 = "^1.34.0"
+psycopg = {version = "^3.2.0", extras = ["binary"]}
+
+[package.source]
+type = "directory"
+url = "../../test-libs/integration-test-utils"
+
+[[package]]
 name = "isort"
 version = "5.13.2"
 description = "A Python utility / library to sort Python imports."
@@ -1126,7 +1144,7 @@ version = "3.3.4"
 description = "PostgreSQL database adapter for Python"
 optional = false
 python-versions = ">=3.10"
-groups = ["main"]
+groups = ["main", "dev"]
 files = [
     {file = "psycopg-3.3.4-py3-none-any.whl", hash = "sha256:b6bbc25ccf05c8fad3b061d9db2ef0909a555171b84b07f29458a447253d679a"},
     {file = "psycopg-3.3.4.tar.gz", hash = "sha256:e21207764952cff81b6b8bdacad9a3939f2793367fdac2987b3aac36a651b5bc"},
@@ -1150,7 +1168,7 @@ version = "3.3.4"
 description = "PostgreSQL database adapter for Python -- C optimisation distribution"
 optional = false
 python-versions = ">=3.10"
-groups = ["main"]
+groups = ["main", "dev"]
 markers = "implementation_name != \"pypy\""
 files = [
     {file = "psycopg_binary-3.3.4-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:b7bfff1ca23732b488cbca3076fc11bc98d520ee122514fdb17a8e20d3338f5a"},
@@ -1606,7 +1624,7 @@ version = "2026.2"
 description = "Provider of IANA time zone data"
 optional = false
 python-versions = ">=2"
-groups = ["main"]
+groups = ["main", "dev"]
 markers = "sys_platform == \"win32\""
 files = [
     {file = "tzdata-2026.2-py2.py3-none-any.whl", hash = "sha256:bbe9af844f658da81a5f95019480da3a89415801f6cc966806612cc7169bffe7"},
@@ -1667,4 +1685,4 @@ test = ["pytest", "pytest-cov"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.14.6,<3.15"
-content-hash = "6c7629c44ef81407506c1dc07da0f2e447fe8f7b7ab0ef357be3a2d0d9ec5fa1"
+content-hash = "c61c10651dc61e8646e34ced6af42492229cc1e6a1f05f8b014b0b2540940354"

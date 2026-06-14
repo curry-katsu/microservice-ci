@@ -2,10 +2,12 @@ SHELL := /bin/bash
 
 ROOT_DIR := $(CURDIR)
 POETRY := POETRY_VIRTUALENVS_IN_PROJECT=true poetry
-POETRY_PROJECTS := $(shell find src/applications src/libs -name pyproject.toml -not -path '*/.venv/*' -exec dirname {} \; | sort)
+POETRY_PROJECT_ROOTS := src/applications src/libs src/test-libs
+POETRY_PROJECTS := $(shell find $(POETRY_PROJECT_ROOTS) -name pyproject.toml -not -path '*/.venv/*' -exec dirname {} \; | sort)
+APPLICATION_PROJECTS := $(shell find src/applications -name pyproject.toml -not -path '*/.venv/*' -exec dirname {} \; | sort)
 COVERAGE_PROJECT := $(firstword $(POETRY_PROJECTS))
 
-.PHONY: local-up local-down ci-all coverage-all format-all test-all install-all lint-all typecheck-all list-projects
+.PHONY: local-up local-down ci-all coverage-all format-all integration-test integration-test-all test-all install-all lint-all typecheck-all list-projects
 
 list-projects:
 	@printf '%s\n' $(POETRY_PROJECTS)
@@ -51,6 +53,21 @@ test-all:
 		(cd "$$project" && $(POETRY) run coverage erase && set +e; $(POETRY) run coverage run --source=src -m pytest; rc=$$?; set -e; if [[ $$rc -ne 0 && $$rc -ne 5 ]]; then exit $$rc; fi; $(POETRY) run coverage report -i --include='src/*' --omit='*/tests/*'; $(POETRY) run coverage xml -i -o coverage.xml --include='src/*' --omit='*/tests/*'); \
 	done
 
+integration-test:
+	@test -n "$(PROJECT)" || (echo "PROJECT is required. Example: make integration-test PROJECT=src/applications/sample-sqs-handler-app" >&2; exit 2)
+	@set -euo pipefail; \
+	echo "==> integration pytest: $(PROJECT)"; \
+	(cd "$(PROJECT)" && $(POETRY) install && $(POETRY) run pytest integration_tests)
+
+integration-test-all:
+	@set -euo pipefail; \
+	for project in $(APPLICATION_PROJECTS); do \
+		if [[ -d "$$project/integration_tests" ]]; then \
+			echo "==> integration pytest: $$project"; \
+			(cd "$$project" && $(POETRY) install && $(POETRY) run pytest integration_tests); \
+		fi; \
+	done
+
 coverage-all:
 	@set -euo pipefail; \
 	rm -rf coverage-reports .coverage .coverage.* coverage.xml htmlcov; \
@@ -59,10 +76,10 @@ coverage-all:
 		echo "==> poetry install: $$project"; \
 		(cd "$$project" && $(POETRY) install); \
 	done; \
-	source_dirs="$$(find "$(ROOT_DIR)/src/applications" "$(ROOT_DIR)/src/libs" -path '*/.venv/*' -prune -o -path '*/src' -type d -print | sort)"; \
+	source_dirs="$$(find "$(ROOT_DIR)/src/applications" "$(ROOT_DIR)/src/libs" "$(ROOT_DIR)/src/test-libs" -path '*/.venv/*' -prune -o -path '*/src' -type d -print | sort)"; \
 	coverage_source="$$(printf '%s\n' "$$source_dirs" | paste -sd, -)"; \
 	pythonpath="$$(printf '%s\n' "$$source_dirs" | paste -sd: -)"; \
-	test_dirs="$$(find "$(ROOT_DIR)/src/applications" "$(ROOT_DIR)/src/libs" -path '*/.venv/*' -prune -o -path '*/tests' -type d -print | sort | tr '\n' ' ')"; \
+	test_dirs="$$(find "$(ROOT_DIR)/src/applications" "$(ROOT_DIR)/src/libs" "$(ROOT_DIR)/src/test-libs" -path '*/.venv/*' -prune -o -path '*/tests' -type d -print | sort | tr '\n' ' ')"; \
 	echo "==> coverage: all projects"; \
 	(cd "$(COVERAGE_PROJECT)" && $(POETRY) run coverage erase && PYTHONPATH="$$pythonpath" $(POETRY) run coverage run --data-file="$(ROOT_DIR)/.coverage" --source="$$coverage_source" -m pytest $$test_dirs); \
 	(cd "$(COVERAGE_PROJECT)" && $(POETRY) run coverage report --data-file="$(ROOT_DIR)/.coverage" --omit="*/tests/*,*/.venv/*"); \
