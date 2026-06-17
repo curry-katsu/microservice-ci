@@ -89,3 +89,5 @@ make coverage-all
 ```
 
 CI の `update-readme-badges` job は、unit test の成功/失敗と集約した coverage から README 冒頭の badges を更新します。
+
+品質ダッシュボードの実現方式は [docs/quality-dashboard.md](docs/quality-dashboard.md) に整理しています。
