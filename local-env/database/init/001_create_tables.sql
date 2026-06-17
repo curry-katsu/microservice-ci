@@ -5,3 +5,14 @@ CREATE TABLE IF NOT EXISTS processed_events (
     detail_type TEXT NOT NULL,
     processed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS api_orders (
+    id BIGSERIAL PRIMARY KEY,
+    order_id TEXT NOT NULL UNIQUE,
+    customer_id TEXT NOT NULL,
+    description TEXT NOT NULL,
+    amount INTEGER NOT NULL CHECK (amount > 0),
+    status TEXT NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

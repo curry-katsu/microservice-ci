@@ -1,0 +1,47 @@
+[tool.poetry]
+name = "sample-api-handler-app"
+version = "0.1.0"
+description = "Sample AWS Lambda API application with authorization and database logic."
+authors = ["microservice-ci contributors"]
+readme = "README.md"
+packages = [{ include = "sample_api_handler_app", from = "src" }]
+
+[tool.poetry.dependencies]
+python = ">=3.14.6,<3.15"
+infra-core = { path = "../../libs/infra-core", develop = true }
+sqlalchemy = "^2.0.0"
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.4.2"
+flake8 = "^7.1.0"
+isort = "^5.13.2"
+mypy = "^1.10.0"
+pytest = "^8.2.2"
+pytest-cov = "^5.0.0"
+pytest-mock = "^3.14.0"
+integration-test-utils = { path = "../../test-libs/integration-test-utils", develop = true }
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[tool.flake8]
+max-line-length = 88
+extend-ignore = ["E203", "W503"]
+
+[tool.mypy]
+python_version = "3.14"
+strict = true
+warn_unused_configs = true
+exclude = ["\\.venv", "build", "dist"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
